@@ -1,4 +1,3 @@
-Here's a formatted version of your README document:
 
 ```markdown
 # CSVChartVisualizer
