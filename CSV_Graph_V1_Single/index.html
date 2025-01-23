@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive CSV Visualizer</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            display: flex;
+            height: 100vh;
+        }
+        .left-panel {
+            width: 25%;
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .left-panel h2 {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+        .left-panel ul {
+            list-style: none;
+            padding: 0;
+        }
+        .left-panel li {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #34495e;
+        }
+        .left-panel li:hover {
+            background: #34495e;
+        }
+        .right-panel {
+            width: 75%;
+            padding: 20px;
+            overflow-x: auto;
+        }
+        .right-panel h1 {
+            font-size: 2em;
+            color: #333;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .controls select, .controls button, .controls input[type="file"] {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            border: none;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        canvas {
+            max-width: 100%;
+            height: 400px;
+        }
+    </style>
+</head>
+<body>
+    <div class="left-panel">
+        <h2>Service Endpoints</h2>
+        <ul id="serviceList"></ul>
+    </div>
+    <div class="right-panel">
+        <h1>Interactive Chart Viewer</h1>
+        <div class="controls">
+            <input type="file" id="csvFileInput" accept=".csv" />
+            <label for="chartType">Chart Type:</label>
+            <select id="chartType">
+                <option value="line">Line Chart</option>
+                <option value="bar">Bar Chart</option>
+            </select>
+            <button onclick="resetZoom()">Reset Zoom</button>
+        </div>
+        <canvas id="chart"></canvas>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
