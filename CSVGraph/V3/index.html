@@ -22,6 +22,8 @@
             border-radius: 8px;
             padding: 10px;
             box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            resize: both;
+            overflow: hidden;
         }
         input {
             margin: 10px;
@@ -33,7 +35,8 @@
 <body>
     <h2>Service Calls Over Time</h2>
     <input type="text" id="search" placeholder="Search data..." onkeyup="filterData()">
-    <input type="date" id="dateFilter" onchange="filterData()">
+    <input type="date" id="dateFilter1" onchange="filterData()">
+    <input type="date" id="dateFilter2" onchange="filterData()">
     <input type="file" id="fileUpload" accept=".csv" onchange="handleFileUpload(event)">
     <div class="chart-container">
         <canvas id="lineGraph"></canvas>
@@ -41,13 +44,17 @@
     <script>
         function filterData() {
             let searchTerm = document.getElementById('search').value.toLowerCase();
-            let selectedDate = document.getElementById('dateFilter').value;
+            let selectedDate1 = document.getElementById('dateFilter1').value;
+            let selectedDate2 = document.getElementById('dateFilter2').value;
             let filteredData = JSON.parse(JSON.stringify(originalData));
 
             filteredData.datasets = filteredData.datasets.filter(dataset => dataset.label.toLowerCase().includes(searchTerm));
             
-            if (selectedDate) {
-                let filteredIndexes = originalData.labels.map((label, index) => label.startsWith(selectedDate) ? index : -1).filter(index => index !== -1);
+            if (selectedDate1 || selectedDate2) {
+                let filteredIndexes = originalData.labels.map((label, index) => 
+                    (selectedDate1 && label.startsWith(selectedDate1)) || (selectedDate2 && label.startsWith(selectedDate2)) ? index : -1
+                ).filter(index => index !== -1);
+                
                 filteredData.labels = filteredIndexes.map(index => originalData.labels[index]);
                 filteredData.datasets.forEach(dataset => {
                     dataset.data = filteredIndexes.map(index => dataset.data[index]);
