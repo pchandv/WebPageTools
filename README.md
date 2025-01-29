@@ -5,7 +5,7 @@ This project is based on a web page and JavaScript.
 ### Live Demo
 - **Version 1**: [CSVGraphVisualizer V1](https://pchandv.github.io/WebPageTools/CSVGraph/V1/)
 - **Version 2**: [CSVGraphVisualizer V2](https://pchandv.github.io/WebPageTools/CSVGraph/V2/)
-- **Version 3**: [CSVGraphVisualizer V2](https://pchandv.github.io/WebPageTools/CSVGraph/V3/)
+- **Version 3**: [CSVGraphVisualizer V3](https://pchandv.github.io/WebPageTools/CSVGraph/V3/)
 ### CSV Format
 The expected CSV format is as follows:
 #### Header:
