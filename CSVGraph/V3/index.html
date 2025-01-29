@@ -6,18 +6,22 @@
     <title>Service Call Line Graph</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
             text-align: center;
             background-color: #f8f9fa;
         }
-        .chart-container {
-            position: relative;
-            width: 90%;
-            max-width: 1200px;
-            height: 600px;
-            margin: auto;
+        .graph-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 20px;
+            justify-content: center;
+            padding: 20px;
+        }
+        .graph-item {
+            cursor: move;
             background: white;
             border-radius: 8px;
             padding: 10px;
@@ -25,7 +29,7 @@
             resize: both;
             overflow: hidden;
         }
-        input {
+        input, select, button {
             margin: 10px;
             padding: 5px;
             width: 200px;
@@ -34,59 +38,112 @@
 </head>
 <body>
     <h2>Service Calls Over Time</h2>
+    <label for="search">Search:</label>
     <input type="text" id="search" placeholder="Search data..." onkeyup="filterData()">
+    
+    <label for="exclude">Exclude:</label>
+    <input type="text" id="exclude" placeholder="Exclude data..." onkeyup="filterData()">
+    
+    <label for="dateFilter1">Date 1:</label>
     <input type="date" id="dateFilter1" onchange="filterData()">
+    
+    <label for="dateFilter2">Date 2:</label>
     <input type="date" id="dateFilter2" onchange="filterData()">
-    <input type="file" id="fileUpload" accept=".csv" onchange="handleFileUpload(event)">
-    <div class="chart-container">
-        <canvas id="lineGraph"></canvas>
-    </div>
+    
+    <label for="countFilter">Count Filter:</label>
+    <input type="number" id="countFilter" placeholder="Enter count" onkeyup="filterData()">
+    
+    <label for="countFilterType">Filter Type:</label>
+    <select id="countFilterType" onchange="filterData()">
+        <option value="greater">Greater Than</option>
+        <option value="less">Less Than</option>
+    </select>
+    
+    <button onclick="resetFilters()">Reset Filters</button>
+    
+    <input type="file" id="fileUpload" accept=".csv" multiple onchange="handleFileUpload(event)">
+    <div id="graphContainer" class="graph-list"></div>
+    
     <script>
+        let graphs = [];
+
         function filterData() {
             let searchTerm = document.getElementById('search').value.toLowerCase();
+            let excludeTerm = document.getElementById('exclude').value.toLowerCase();
             let selectedDate1 = document.getElementById('dateFilter1').value;
             let selectedDate2 = document.getElementById('dateFilter2').value;
-            let filteredData = JSON.parse(JSON.stringify(originalData));
-
-            filteredData.datasets = filteredData.datasets.filter(dataset => dataset.label.toLowerCase().includes(searchTerm));
+            let countFilter = parseInt(document.getElementById('countFilter').value);
+            let countFilterType = document.getElementById('countFilterType').value;
             
-            if (selectedDate1 || selectedDate2) {
-                let filteredIndexes = originalData.labels.map((label, index) => 
-                    (selectedDate1 && label.startsWith(selectedDate1)) || (selectedDate2 && label.startsWith(selectedDate2)) ? index : -1
-                ).filter(index => index !== -1);
+            graphs.forEach(graph => {
+                let filteredData = JSON.parse(JSON.stringify(graph.originalData));
                 
-                filteredData.labels = filteredIndexes.map(index => originalData.labels[index]);
-                filteredData.datasets.forEach(dataset => {
-                    dataset.data = filteredIndexes.map(index => dataset.data[index]);
-                });
-            }
-            
-            if (filteredData.datasets.length === 0) {
-                filteredData.labels = [];
-            }
-            lineGraph.data = filteredData;
-            lineGraph.update();
+                filteredData.datasets = filteredData.datasets.filter(dataset =>
+                    dataset.label.toLowerCase().includes(searchTerm) && !dataset.label.toLowerCase().includes(excludeTerm)
+                );
+                
+                if (selectedDate1 || selectedDate2) {
+                    let filteredIndexes = graph.originalData.labels.map((label, index) => 
+                        (selectedDate1 && label.startsWith(selectedDate1)) || (selectedDate2 && label.startsWith(selectedDate2)) ? index : -1
+                    ).filter(index => index !== -1);
+                    
+                    filteredData.labels = filteredIndexes.map(index => graph.originalData.labels[index]);
+                    filteredData.datasets.forEach(dataset => {
+                        dataset.data = filteredIndexes.map(index => dataset.data[index]);
+                    });
+                }
+                
+                if (!isNaN(countFilter)) {
+                    filteredData.datasets.forEach(dataset => {
+                        dataset.data = dataset.data.map(value => {
+                            if (value !== null) {
+                                if ((countFilterType === 'greater' && value >= countFilter) || 
+                                    (countFilterType === 'less' && value <= countFilter)) {
+                                    return value;
+                                }
+                            }
+                            return null;
+                        }).filter(value => value !== null);
+                    });
+                }
+                
+                graph.chart.data = filteredData;
+                graph.chart.update();
+            });
         }
 
+        function resetFilters() {
+            document.getElementById('search').value = '';
+            document.getElementById('exclude').value = '';
+            document.getElementById('dateFilter1').value = '';
+            document.getElementById('dateFilter2').value = '';
+            document.getElementById('countFilter').value = '';
+            document.getElementById('countFilterType').value = 'greater';
+            graphs.forEach(graph => {
+                graph.chart.data = JSON.parse(JSON.stringify(graph.originalData));
+                graph.chart.update();
+            });
+        }
         function handleFileUpload(event) {
-            const file = event.target.files[0];
-            if (!file || !file.name.endsWith('.csv')) {
-                alert('Invalid file format. Please upload a CSV file.');
-                return;
-            }
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const rows = e.target.result.trim().split('\n').map(row => row.split(','));
-                if (rows.length < 2) {
-                    alert('Invalid CSV format. The file must contain at least two rows.');
+            Array.from(event.target.files).forEach(file => {
+                if (!file.name.endsWith('.csv')) {
+                    alert('Invalid file format. Please upload a CSV file.');
                     return;
                 }
-                updateChart(rows.slice(1)); // Ignore header row, process from second row
-            };
-            reader.readAsText(file);
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const rows = e.target.result.trim().split('\n').map(row => row.split(','));
+                    if (rows.length < 2) {
+                        alert('Invalid CSV format. The file must contain at least two rows.');
+                        return;
+                    }
+                    createGraph(rows.slice(1)); // Ignore header row, process from second row
+                };
+                reader.readAsText(file);
+            });
         }
 
-        function updateChart(rows) {
+        function createGraph(rows) {
             let newLabels = [];
             let newDatasets = {};
             for (let i = 0; i < rows.length; i++) {
@@ -107,42 +164,29 @@
                 borderWidth: 2
             }));
             
-            originalData.labels = newLabels;
-            originalData.datasets = updatedDatasets;
+            let container = document.createElement('div');
+            container.classList.add('graph-item');
+            container.innerHTML = '<canvas></canvas>';
+            document.getElementById('graphContainer').appendChild(container);
             
-            lineGraph.data.labels = newLabels;
-            lineGraph.data.datasets = updatedDatasets;
-            lineGraph.update();
-        }
-
-        let originalData = {
-            labels: [],
-            datasets: []
-        };
-
-        const lineGraph = new Chart(document.getElementById('lineGraph').getContext('2d'), {
-            type: 'line',
-            data: JSON.parse(JSON.stringify(originalData)),
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    x: {
-                        title: { display: true, text: 'Request Date' }
+            let ctx = container.querySelector('canvas').getContext('2d');
+            let chart = new Chart(ctx, {
+                type: 'line',
+                data: { labels: newLabels, datasets: updatedDatasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { title: { display: true, text: 'Request Date' } },
+                        y: { title: { display: true, text: 'Total Calls' } }
                     },
-                    y: {
-                        title: { display: true, text: 'Total Calls' }
-                    }
-                },
-                plugins: {
-                    legend: { labels: { usePointStyle: true, boxWidth: 15 } },
-                    zoom: {
-                        pan: { enabled: true, mode: 'x' },
-                        zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' }
+                    plugins: {
+                        legend: { labels: { usePointStyle: true, boxWidth: 15 } }
                     }
                 }
-            }
-        });
+            });
+            graphs.push({ chart, container, originalData: { labels: newLabels, datasets: updatedDatasets } });
+        }
     </script>
 </body>
 </html>
