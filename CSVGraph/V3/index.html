@@ -29,7 +29,7 @@
             resize: both;
             overflow: hidden;
         }
-        input {
+        input, select, button {
             margin: 10px;
             padding: 5px;
             width: 200px;
@@ -38,9 +38,29 @@
 </head>
 <body>
     <h2>Service Calls Over Time</h2>
+    <label for="search">Search:</label>
     <input type="text" id="search" placeholder="Search data..." onkeyup="filterData()">
+    
+    <label for="exclude">Exclude:</label>
+    <input type="text" id="exclude" placeholder="Exclude data..." onkeyup="filterData()">
+    
+    <label for="dateFilter1">Date 1:</label>
     <input type="date" id="dateFilter1" onchange="filterData()">
+    
+    <label for="dateFilter2">Date 2:</label>
     <input type="date" id="dateFilter2" onchange="filterData()">
+    
+    <label for="countFilter">Count Filter:</label>
+    <input type="number" id="countFilter" placeholder="Enter count" onkeyup="filterData()">
+    
+    <label for="countFilterType">Filter Type:</label>
+    <select id="countFilterType" onchange="filterData()">
+        <option value="greater">Greater Than</option>
+        <option value="less">Less Than</option>
+    </select>
+    
+    <button onclick="resetFilters()">Reset Filters</button>
+    
     <input type="file" id="fileUpload" accept=".csv" multiple onchange="handleFileUpload(event)">
     <div id="graphContainer" class="graph-list"></div>
     
@@ -50,12 +70,15 @@
 
         function filterData() {
             let searchTerm = document.getElementById('search').value.toLowerCase();
+            let excludeTerm = document.getElementById('exclude').value.toLowerCase();
             let selectedDate1 = document.getElementById('dateFilter1').value;
             let selectedDate2 = document.getElementById('dateFilter2').value;
+            let countFilter = document.getElementById('countFilter').value;
+            let countFilterType = document.getElementById('countFilterType').value;
             
             graphs.forEach(graph => {
                 let filteredData = JSON.parse(JSON.stringify(graph.originalData));
-                filteredData.datasets = filteredData.datasets.filter(dataset => dataset.label.toLowerCase().includes(searchTerm));
+                filteredData.datasets = filteredData.datasets.filter(dataset => dataset.label.toLowerCase().includes(searchTerm) && !dataset.label.toLowerCase().includes(excludeTerm));
                 
                 if (selectedDate1 || selectedDate2) {
                     let filteredIndexes = graph.originalData.labels.map((label, index) => 
@@ -68,12 +91,30 @@
                     });
                 }
                 
-                if (filteredData.datasets.length === 0) {
-                    filteredData.labels = [];
+                if (countFilter) {
+                    filteredData.datasets.forEach(dataset => {
+                        dataset.data = dataset.data.map(value => {
+                            if ((countFilterType === 'greater' && value >= countFilter) || (countFilterType === 'less' && value <= countFilter)) {
+                                return value;
+                            }
+                            return null;
+                        }).filter(value => value !== null);
+                    });
                 }
+                
                 graph.chart.data = filteredData;
                 graph.chart.update();
             });
+        }
+
+        function resetFilters() {
+            document.getElementById('search').value = '';
+            document.getElementById('exclude').value = '';
+            document.getElementById('dateFilter1').value = '';
+            document.getElementById('dateFilter2').value = '';
+            document.getElementById('countFilter').value = '';
+            document.getElementById('countFilterType').value = 'greater';
+            filterData();
         }
 
         function handleFileUpload(event) {
@@ -133,16 +174,12 @@
                         y: { title: { display: true, text: 'Total Calls' } }
                     },
                     plugins: {
-                        legend: { labels: { usePointStyle: true, boxWidth: 15 } },
-                        zoom: { pan: { enabled: true, mode: 'x' }, zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' } }
+                        legend: { labels: { usePointStyle: true, boxWidth: 15 } }
                     }
                 }
             });
-            
             graphs.push({ chart, container, originalData: { labels: newLabels, datasets: updatedDatasets } });
         }
-
-        new Sortable(document.getElementById('graphContainer'), { animation: 150 });
     </script>
 </body>
 </html>
