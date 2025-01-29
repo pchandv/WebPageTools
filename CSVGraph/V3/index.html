@@ -3,130 +3,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enhanced CSV Visualizer</title>
+    <title>Service Call Line Graph</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
-    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f9;
-            display: flex;
-            height: 100vh;
+            text-align: center;
+            background-color: #f8f9fa;
         }
-        .left-panel {
-            width: 25%;
-            background: #2c3e50;
-            color: white;
-            padding: 20px;
-            overflow-y: auto;
-        }
-        .left-panel h2 {
-            font-size: 1.5em;
-            margin-bottom: 10px;
-        }
-        .left-panel input {
-            width: 100%;
+        .chart-container {
+            position: relative;
+            width: 90%;
+            max-width: 1200px;
+            height: 600px;
+            margin: auto;
+            background: white;
+            border-radius: 8px;
             padding: 10px;
-            margin-bottom: 10px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
         }
-        .left-panel ul {
-            list-style: none;
-            padding: 0;
-        }
-        .left-panel li {
-            padding: 10px;
-            cursor: pointer;
-            border-bottom: 1px solid #34495e;
-        }
-        .left-panel li:hover {
-            background: #34495e;
-        }
-        .right-panel {
-            width: 75%;
-            padding: 20px;
-            overflow-x: auto;
-        }
-        .right-panel h1 {
-            font-size: 2em;
-            color: #333;
-        }
-        .controls {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        .controls select, .controls button, .controls input[type="file"] {
-            padding: 10px;
-            font-size: 16px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        button {
-            background-color: #007bff;
-            color: white;
-            cursor: pointer;
-            border: none;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        canvas {
-            max-width: 100%;
-            height: 400px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 10px;
-            text-align: left;
-        }
-        th {
-            background-color: #007bff;
-            color: white;
-        }
-        tr:nth-child(even) {
-            background-color: #f2f2f2;
+        input {
+            margin: 10px;
+            padding: 5px;
+            width: 200px;
         }
     </style>
 </head>
 <body>
-    <div class="left-panel">
-        <h2>Service Endpoints</h2>
-        <input type="text" id="searchService" placeholder="Search services..." onkeyup="filterServiceList()" />
-        <ul id="serviceList"></ul>
+    <h2>Service Calls Over Time</h2>
+    <input type="text" id="search" placeholder="Search data..." onkeyup="filterData()">
+    <input type="date" id="dateFilter" onchange="filterData()">
+    <input type="file" id="fileUpload" accept=".csv" onchange="handleFileUpload(event)">
+    <div class="chart-container">
+        <canvas id="lineGraph"></canvas>
     </div>
-    <div class="right-panel">
-        <h1>Enhanced Chart Viewer</h1>
-        <div class="controls">
-            <input type="file" id="csvFileInput" accept=".csv" multiple />
-            <label for="chartType">Chart Type:</label>
-            <select id="chartType">
-                <option value="line">Line Chart</option>
-                <option value="bar">Bar Chart</option>
-            </select>
-            <label for="aggregation">Aggregate By:</label>
-            <select id="aggregation">
-                <option value="none">None</option>
-                <option value="day">Day</option>
-                <option value="week">Week</option>
-                <option value="month">Month</option>
-            </select>
-            <button onclick="resetZoom()">Reset Zoom</button>
-            <button onclick="downloadChart()">Download Chart</button>
-            <button onclick="exportData()">Export Data</button>
-        </div>
-        <canvas id="chart"></canvas>
-        <table id="dataTable"></table>
-    </div>
-    <script src="script.js"></script>
+    <script>
+        function filterData() {
+            let searchTerm = document.getElementById('search').value.toLowerCase();
+            let selectedDate = document.getElementById('dateFilter').value;
+            let filteredData = JSON.parse(JSON.stringify(originalData));
+
+            filteredData.datasets = filteredData.datasets.filter(dataset => dataset.label.toLowerCase().includes(searchTerm));
+            
+            if (selectedDate) {
+                let filteredIndexes = originalData.labels.map((label, index) => label.startsWith(selectedDate) ? index : -1).filter(index => index !== -1);
+                filteredData.labels = filteredIndexes.map(index => originalData.labels[index]);
+                filteredData.datasets.forEach(dataset => {
+                    dataset.data = filteredIndexes.map(index => dataset.data[index]);
+                });
+            }
+            
+            if (filteredData.datasets.length === 0) {
+                filteredData.labels = [];
+            }
+            lineGraph.data = filteredData;
+            lineGraph.update();
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file || !file.name.endsWith('.csv')) {
+                alert('Invalid file format. Please upload a CSV file.');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const rows = e.target.result.trim().split('\n').map(row => row.split(','));
+                if (rows.length < 2) {
+                    alert('Invalid CSV format. The file must contain at least two rows.');
+                    return;
+                }
+                updateChart(rows.slice(1)); // Ignore header row, process from second row
+            };
+            reader.readAsText(file);
+        }
+
+        function updateChart(rows) {
+            let newLabels = [];
+            let newDatasets = {};
+            for (let i = 0; i < rows.length; i++) {
+                let [date, service, calls] = rows[i];
+                if (!date || !service || isNaN(calls)) continue;
+                if (!newLabels.includes(date)) newLabels.push(date);
+                if (!newDatasets[service]) newDatasets[service] = [];
+                newDatasets[service].push(parseInt(calls));
+            }
+            let updatedDatasets = Object.keys(newDatasets).map((service, index) => ({
+                label: service,
+                data: newDatasets[service],
+                borderColor: ['red', 'green', 'blue', 'purple', 'orange'][index % 5],
+                backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                fill: false,
+                tension: 0.2,
+                pointRadius: 4,
+                borderWidth: 2
+            }));
+            
+            originalData.labels = newLabels;
+            originalData.datasets = updatedDatasets;
+            
+            lineGraph.data.labels = newLabels;
+            lineGraph.data.datasets = updatedDatasets;
+            lineGraph.update();
+        }
+
+        let originalData = {
+            labels: [],
+            datasets: []
+        };
+
+        const lineGraph = new Chart(document.getElementById('lineGraph').getContext('2d'), {
+            type: 'line',
+            data: JSON.parse(JSON.stringify(originalData)),
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Request Date' }
+                    },
+                    y: {
+                        title: { display: true, text: 'Total Calls' }
+                    }
+                },
+                plugins: {
+                    legend: { labels: { usePointStyle: true, boxWidth: 15 } },
+                    zoom: {
+                        pan: { enabled: true, mode: 'x' },
+                        zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' }
+                    }
+                }
+            }
+        });
+    </script>
 </body>
 </html>
