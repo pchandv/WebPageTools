@@ -121,7 +121,7 @@
         }
         function handleFileUpload(event) {
             Array.from(event.target.files).forEach(file => {
-                if (!file.name.endsWith('.csv')) {
+                if (!file.name.toLowerCase().endsWith('.csv')) {
                     alert('Invalid file format. Please upload a CSV file.');
                     return;
                 }
