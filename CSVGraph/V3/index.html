@@ -40,10 +40,7 @@
     <h2>Service Calls Over Time</h2>
     <label for="search">Search:</label>
     <input type="text" id="search" placeholder="Search data..." onkeyup="filterData()">
-    
-    <label for="exclude">Exclude:</label>
-    <input type="text" id="exclude" placeholder="Exclude data..." onkeyup="filterData()">
-    
+       
     <label for="dateFilter1">Date 1:</label>
     <input type="date" id="dateFilter1" onchange="filterData()">
     
@@ -69,7 +66,6 @@
 
         function filterData() {
             let searchTerm = document.getElementById('search').value.toLowerCase();
-            let excludeTerm = document.getElementById('exclude').value.toLowerCase();
             let selectedDate1 = document.getElementById('dateFilter1').value;
             let selectedDate2 = document.getElementById('dateFilter2').value;
             let countFilter = parseInt(document.getElementById('countFilter').value);
@@ -79,7 +75,7 @@
                 let filteredData = JSON.parse(JSON.stringify(graph.originalData));
                 
                 filteredData.datasets = filteredData.datasets.filter(dataset =>
-                    dataset.label.toLowerCase().includes(searchTerm) && !dataset.label.toLowerCase().includes(excludeTerm)
+                    dataset.label.toLowerCase().includes(searchTerm) //&& !dataset.label.toLowerCase().includes(excludeTerm)
                 );
                 
                 if (selectedDate1 || selectedDate2) {
@@ -114,7 +110,6 @@
 
         function resetFilters() {
             document.getElementById('search').value = '';
-            document.getElementById('exclude').value = '';
             document.getElementById('dateFilter1').value = '';
             document.getElementById('dateFilter2').value = '';
             document.getElementById('countFilter').value = '';
