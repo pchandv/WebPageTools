@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Log Uploader for Seq</title>
+</head>
+<body>
+    <h2>Upload Logs to Seq</h2>
+    <input type="file" id="fileInput" />
+    <button onclick="uploadFile()">Upload & Send to Seq</button>
+
+    <script>
+        function uploadFile() {
+            var fileInput = document.getElementById('fileInput').files[0];
+            if (!fileInput) {
+                alert("Please select a file.");
+                return;
+            }
+
+            var reader = new FileReader();
+            reader.onload = function (event) {
+                var logs = event.target.result.split("\n");
+                var jsonLogs = logs.map(line => {
+                    return { Timestamp: new Date().toISOString(), Message: line.trim(), Source: "UploadedLog" };
+                });
+
+                fetch("http://localhost:5341/api/events/raw", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json",
+                        "X-Seq-ApiKey": "VuCCi1I6m5AgwDdqk92F", // Replace with actual API Key
+                     },
+                     body: JSON.stringify({
+        "Events": jsonLogs.map(log => ({
+            "Timestamp": new Date().toISOString(),
+            "Level": "Information",
+            "MessageTemplate": log.Message,
+            "Properties": {
+                "Source": "UploadedLogs"
+            }
+        }))
+    })
+                })
+                .then(response => response.json())
+                .then(data => console.log("Logs sent to Seq:", data))
+                .catch(error => console.error("Error:", error));
+            };
+            reader.readAsText(fileInput);
+        }
+    </script>
+</body>
+</html>
