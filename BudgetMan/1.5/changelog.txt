@@ -1,0 +1,5 @@
+## v1.4.2
+- Added SSA, NPS, KVP comparisons
+- Updated chart and verdict logic
+- Enhanced layout and theme toggle
+- Included export and content pages

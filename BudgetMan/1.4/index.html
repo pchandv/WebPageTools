@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <title>BudgetMan v1.4.2</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <div class="navbar">
+      <div class="logo">🏦 BudgetMan</div>
+      <nav>
+        <a href="index.html">Home</a>
+        <a href="about.html">About</a>
+        <a href="how-to.html">How to Use</a>
+        <a href="sip.html">SIP</a>
+        <a href="ai-guide.html">AI Guide</a>
+      </nav>
+      <button onclick="toggleTheme()">🌓</button>
+    </div>
+  </header>
+  <main>
+    <section class="form-grid">
+      <label>Loan Amount ₹<input type="number" id="loanAmount" value="3000000" /></label>
+      <label>Interest Rate %<input type="number" id="interestRate" value="8" /></label>
+      <label>Tenure (Years)<input type="number" id="loanTenure" value="20" /></label>
+      <label>Surplus Amount ₹<input type="number" id="surplusAmount" value="500000" /></label>
+      <label>SIP Amount ₹<input type="number" id="sipAmount" value="5000" /></label>
+      <label>SIP Years<input type="number" id="sipYears" value="15" /></label>
+      <label>SIP Rate %<input type="number" id="sipRate" value="12" /></label>
+      <label><input type="checkbox" id="enableSSA" checked /> SSA Rate %<input type="number" id="ssaRate" value="7.6" /></label>
+      <label><input type="checkbox" id="enableNPS" checked /> NPS Rate %<input type="number" id="npsRate" value="10" /></label>
+      <label><input type="checkbox" id="enableKVP" checked /> KVP Rate %<input type="number" id="kvpRate" value="7.5" /></label>
+      <div class="buttons">
+        <button onclick="calculate()">Compare</button>
+        <button onclick="exportPDF()">Export PDF</button>
+        <button onclick="exportExcel()">Export Excel</button>
+      </div>
+    </section>
+    <section class="chart-area">
+      <canvas id="comparisonChart"></canvas>
+      <p id="verdict"></p>
+    </section>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

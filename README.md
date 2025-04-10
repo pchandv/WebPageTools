@@ -15,3 +15,9 @@ RequestDate, Service, TotalCalls
 2025-01-01, ServiceB, 85  
 2025-01-02, ServiceA, 100
 ---
+
+BudgetMan
+----------
+###BudgetMan
+**Version 1.4**: [BudgetMan 1.4](https://pchandv.github.io/WebPageTools/BudgetMan/1.4)
+**Version 1.5**: [BudgetMan 1.4](https://pchandv.github.io/WebPageTools/BudgetMan/1.5)
