@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Images to Compressed PDF</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 30px; background: #1a1a1a; color: #fff; }
+        .container { background: #222; padding: 30px; border-radius: 12px; max-width: 450px; margin: auto; }
+        input[type="file"] { margin-bottom: 20px; }
+        button { padding: 8px 18px; font-size: 16px; border: none; background: #007bff; color: #fff; border-radius: 4px; cursor: pointer; }
+        button:disabled { background: #555; }
+        #preview img { max-width: 100px; max-height: 100px; margin: 4px; border-radius: 6px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>Merge & Compress Images to PDF</h2>
+    <input type="file" id="imageInput" accept="image/*" multiple>
+    <div id="preview"></div>
+    <label>
+        JPEG Quality:
+        <input type="range" id="jpegQuality" min="0.2" max="1" step="0.05" value="0.7">
+        <span id="qualityVal">0.7</span>
+    </label>
+    <br><br>
+    <button id="generateBtn" disabled>Generate Compressed PDF</button>
+</div>
+
+<script>
+const { jsPDF } = window.jspdf;
+const imageInput = document.getElementById('imageInput');
+const preview = document.getElementById('preview');
+const generateBtn = document.getElementById('generateBtn');
+const jpegQualityInput = document.getElementById('jpegQuality');
+const qualityVal = document.getElementById('qualityVal');
+let imageFiles = [];
+
+jpegQualityInput.addEventListener('input', () => {
+    qualityVal.textContent = jpegQualityInput.value;
+});
+
+imageInput.addEventListener('change', function() {
+    preview.innerHTML = '';
+    imageFiles = Array.from(this.files);
+    if (imageFiles.length > 0) {
+        generateBtn.disabled = false;
+        imageFiles.forEach(file => {
+            const img = document.createElement('img');
+            img.src = URL.createObjectURL(file);
+            preview.appendChild(img);
+        });
+    } else {
+        generateBtn.disabled = true;
+    }
+});
+
+function resizeImage(img, maxWidth, maxHeight, quality = 0.7) {
+    return new Promise((resolve) => {
+        const canvas = document.createElement('canvas');
+        let width = img.width, height = img.height;
+        let ratio = Math.min(maxWidth / width, maxHeight / height, 1); // Only shrink, never enlarge
+        width = width * ratio;
+        height = height * ratio;
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        // Always convert to JPEG
+        canvas.toBlob(blob => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
+        }, 'image/jpeg', quality);
+    });
+}
+
+generateBtn.addEventListener('click', async function() {
+    if (!imageFiles.length) return;
+    generateBtn.disabled = true;
+    const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+    const pageWidth = 210, pageHeight = 297; // mm for A4
+
+    const quality = parseFloat(jpegQualityInput.value);
+
+    for (let i = 0; i < imageFiles.length; i++) {
+        const file = imageFiles[i];
+        await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const img = new Image();
+                img.onload = async function() {
+                    // Resize image to fit A4
+                    const maxPxWidth = 1800; // px, for decent quality (A4 at 150dpi)
+                    const maxPxHeight = 2550;
+                    const dataUrl = await resizeImage(img, maxPxWidth, maxPxHeight, quality);
+                    // Calculate dimensions in mm for jsPDF
+                    let imgProps = pdf.getImageProperties(dataUrl);
+                    let pdfRatio = Math.min(pageWidth / imgProps.width, pageHeight / imgProps.height);
+                    let finalWidth = imgProps.width * pdfRatio;
+                    let finalHeight = imgProps.height * pdfRatio;
+                    let x = (pageWidth - finalWidth) / 2;
+                    let y = (pageHeight - finalHeight) / 2;
+                    pdf.addImage(dataUrl, 'JPEG', x, y, finalWidth, finalHeight, undefined, 'FAST');
+                    if (i < imageFiles.length - 1) pdf.addPage();
+                    resolve();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+    pdf.save('compressed-images.pdf');
+    generateBtn.disabled = false;
+});
+</script>
+</body>
+</html>
