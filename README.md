@@ -26,4 +26,4 @@ Converters
 ----------
 ###Converters
 
-**version 1.0**: [Image2Pdf](https://pchandv.github.io/WebPageTools/Converters/image2pdf)
+**version 1.0**: [Image2Pdf](https://pchandv.github.io/WebPageTools/Converters/Image2pdf)
