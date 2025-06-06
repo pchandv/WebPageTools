@@ -30,3 +30,4 @@ Converters
 Utility tools including an Image→PDF converter.
 
 **version 1.0**: [Image2Pdf](https://pchandv.github.io/WebPageTools/Converters/Image2pdf)
+**version 1.0**: [Text2Image](https://pchandv.github.io/WebPageTools/Converters/Text2Image)
