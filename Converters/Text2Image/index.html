@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Text to Image Designer</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 30px; background: #1a1a1a; color: #fff; }
+        .container { background: #222; padding: 30px; border-radius: 12px; max-width: 500px; margin: auto; }
+        label { display: block; margin-top: 10px; }
+        input, textarea, select, button { width: 100%; margin-top: 5px; padding: 8px; border-radius: 4px; border: none; }
+        textarea { resize: vertical; }
+        canvas { display: block; margin-top: 20px; border: 1px solid #555; }
+        button { background: #007bff; color: #fff; cursor: pointer; margin-top: 15px; }
+        button:disabled { background: #555; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>Text to Image Designer</h2>
+    <label for="textInput">Text</label>
+    <textarea id="textInput" rows="5" placeholder="Enter text here..."></textarea>
+
+    <label for="widthInput">Width (px)</label>
+    <input type="number" id="widthInput" value="800">
+
+    <label for="heightInput">Height (px)</label>
+    <input type="number" id="heightInput" value="400">
+
+    <label for="bgColorInput">Background Color</label>
+    <input type="color" id="bgColorInput" value="#ffffff">
+
+    <label for="textColorInput">Text Color</label>
+    <input type="color" id="textColorInput" value="#000000">
+
+    <label for="fontFamilyInput">Font Family</label>
+    <select id="fontFamilyInput">
+        <option value="Arial">Arial</option>
+        <option value="Helvetica">Helvetica</option>
+        <option value="Times New Roman">Times New Roman</option>
+        <option value="Courier New">Courier New</option>
+        <option value="Georgia">Georgia</option>
+    </select>
+
+    <label for="fontSizeInput">Font Size (px)</label>
+    <input type="number" id="fontSizeInput" value="40">
+
+    <button id="generateBtn">Generate Image</button>
+    <button id="downloadBtn" disabled>Download Image</button>
+
+    <canvas id="canvas" width="800" height="400"></canvas>
+</div>
+<script>
+function generateImage() {
+    const text = document.getElementById('textInput').value;
+    const width = parseInt(document.getElementById('widthInput').value) || 800;
+    const height = parseInt(document.getElementById('heightInput').value) || 400;
+    const bgColor = document.getElementById('bgColorInput').value;
+    const textColor = document.getElementById('textColorInput').value;
+    const fontFamily = document.getElementById('fontFamilyInput').value;
+    const fontSize = parseInt(document.getElementById('fontSizeInput').value) || 40;
+
+    const canvas = document.getElementById('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.fillStyle = textColor;
+    ctx.font = fontSize + 'px ' + fontFamily;
+    ctx.textBaseline = 'top';
+    const lines = text.split('\n');
+    const lineHeight = fontSize * 1.2;
+    let x = 10;
+    let y = 10;
+    lines.forEach(line => {
+        ctx.fillText(line, x, y);
+        y += lineHeight;
+    });
+
+    document.getElementById('downloadBtn').disabled = false;
+}
+
+document.getElementById('generateBtn').addEventListener('click', generateImage);
+
+document.getElementById('downloadBtn').addEventListener('click', function() {
+    const canvas = document.getElementById('canvas');
+    const link = document.createElement('a');
+    link.download = 'text-image.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+});
+</script>
+</body>
+</html>
