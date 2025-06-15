@@ -10,7 +10,20 @@
         input[type="file"] { margin-bottom: 20px; }
         button { padding: 8px 18px; font-size: 16px; border: none; background: #007bff; color: #fff; border-radius: 4px; cursor: pointer; }
         button:disabled { background: #555; }
+        #preview { display: flex; flex-wrap: wrap; }
         #preview img { max-width: 100px; max-height: 100px; margin: 4px; border-radius: 6px; }
+        #message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #333;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 5px;
+            display: none;
+            z-index: 1000;
+        }
+        #pdfViewer { width: 100%; height: 500px; margin-top: 20px; display: none; border: 1px solid #555; }
     </style>
 </head>
 <body>
@@ -25,6 +38,8 @@
     </label>
     <br><br>
     <button id="generateBtn" disabled>Generate Compressed PDF</button>
+    <div id="message"></div>
+    <iframe id="pdfViewer"></iframe>
 </div>
 
 <script>
@@ -32,9 +47,23 @@ const { jsPDF } = window.jspdf;
 const imageInput = document.getElementById('imageInput');
 const preview = document.getElementById('preview');
 const generateBtn = document.getElementById('generateBtn');
+const messageBox = document.getElementById('message');
+const pdfViewer = document.getElementById('pdfViewer');
 const jpegQualityInput = document.getElementById('jpegQuality');
 const qualityVal = document.getElementById('qualityVal');
 let imageFiles = [];
+
+function showMessage(text, type = 'info', autoHide = true) {
+    messageBox.textContent = text;
+    let bg = '#333';
+    if (type === 'error') bg = '#d9534f';
+    else if (type === 'success') bg = '#28a745';
+    messageBox.style.background = bg;
+    messageBox.style.display = 'block';
+    if (autoHide) {
+        setTimeout(() => { messageBox.style.display = 'none'; }, 4000);
+    }
+}
 
 jpegQualityInput.addEventListener('input', () => {
     qualityVal.textContent = jpegQualityInput.value;
@@ -44,9 +73,11 @@ imageInput.addEventListener('change', function() {
     preview.innerHTML = '';
     imageFiles = Array.from(this.files);
     if (imageFiles.length > 0) {
+        showMessage(`${imageFiles.length} image(s) selected`, 'info');
         generateBtn.disabled = false;
         imageFiles.forEach(file => {
             const img = document.createElement('img');
+            img.onload = () => URL.revokeObjectURL(img.src);
             img.src = URL.createObjectURL(file);
             preview.appendChild(img);
         });
@@ -76,41 +107,61 @@ function resizeImage(img, maxWidth, maxHeight, quality = 0.7) {
 }
 
 generateBtn.addEventListener('click', async function() {
-    if (!imageFiles.length) return;
-    generateBtn.disabled = true;
-    const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-    const pageWidth = 210, pageHeight = 297; // mm for A4
-
-    const quality = parseFloat(jpegQualityInput.value);
-
-    for (let i = 0; i < imageFiles.length; i++) {
-        const file = imageFiles[i];
-        await new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                const img = new Image();
-                img.onload = async function() {
-                    // Resize image to fit A4
-                    const maxPxWidth = 1800; // px, for decent quality (A4 at 150dpi)
-                    const maxPxHeight = 2550;
-                    const dataUrl = await resizeImage(img, maxPxWidth, maxPxHeight, quality);
-                    // Calculate dimensions in mm for jsPDF
-                    let imgProps = pdf.getImageProperties(dataUrl);
-                    let pdfRatio = Math.min(pageWidth / imgProps.width, pageHeight / imgProps.height);
-                    let finalWidth = imgProps.width * pdfRatio;
-                    let finalHeight = imgProps.height * pdfRatio;
-                    let x = (pageWidth - finalWidth) / 2;
-                    let y = (pageHeight - finalHeight) / 2;
-                    pdf.addImage(dataUrl, 'JPEG', x, y, finalWidth, finalHeight, undefined, 'FAST');
-                    if (i < imageFiles.length - 1) pdf.addPage();
-                    resolve();
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        });
+    if (!imageFiles.length) {
+        showMessage('No images selected', 'error');
+        return;
     }
-    pdf.save('compressed-images.pdf');
+    generateBtn.disabled = true;
+    pdfViewer.style.display = 'none';
+    showMessage('Generating PDF...', 'info', false);
+    try {
+        const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+        const pageWidth = 210, pageHeight = 297; // mm for A4
+        const quality = parseFloat(jpegQualityInput.value);
+
+        for (let i = 0; i < imageFiles.length; i++) {
+            showMessage(`Processing ${i + 1} of ${imageFiles.length}...`, 'info', false);
+            const file = imageFiles[i];
+            await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onerror = reject;
+                reader.onload = async function(e) {
+                    const img = new Image();
+                    img.onerror = reject;
+                    img.onload = async function() {
+                        try {
+                            const maxPxWidth = 1800; // px, for decent quality (A4 at 150dpi)
+                            const maxPxHeight = 2550;
+                            const dataUrl = await resizeImage(img, maxPxWidth, maxPxHeight, quality);
+                            let imgProps = pdf.getImageProperties(dataUrl);
+                            let pdfRatio = Math.min(pageWidth / imgProps.width, pageHeight / imgProps.height);
+                            let finalWidth = imgProps.width * pdfRatio;
+                            let finalHeight = imgProps.height * pdfRatio;
+                            let x = (pageWidth - finalWidth) / 2;
+                            let y = (pageHeight - finalHeight) / 2;
+                            pdf.addImage(dataUrl, 'JPEG', x, y, finalWidth, finalHeight, undefined, 'FAST');
+                            if (i < imageFiles.length - 1) pdf.addPage();
+                            resolve();
+                        } catch (err) { reject(err); }
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        showMessage('Finalizing PDF...', 'info', false);
+        const pdfBlob = pdf.output('blob');
+        const url = URL.createObjectURL(pdfBlob);
+        pdfViewer.src = url;
+        pdfViewer.style.display = 'block';
+        pdf.save('compressed-images.pdf');
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showMessage('PDF generated successfully', 'success');
+    } catch (err) {
+        console.error(err);
+        showMessage('Error generating PDF', 'error');
+    }
     generateBtn.disabled = false;
 });
 </script>
