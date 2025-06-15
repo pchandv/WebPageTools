@@ -124,10 +124,13 @@ generateBtn.addEventListener('click', async function() {
             const file = imageFiles[i];
             await new Promise((resolve, reject) => {
                 const reader = new FileReader();
-                reader.onerror = reject;
+                reader.onerror = () => {
+                    const err = reader.error && reader.error.message ? reader.error.message : 'Failed to read image';
+                    reject(new Error(err));
+                };
                 reader.onload = async function(e) {
                     const img = new Image();
-                    img.onerror = reject;
+                    img.onerror = () => reject(new Error('Failed to load image'));
                     img.onload = async function() {
                         try {
                             const maxPxWidth = 1800; // px, for decent quality (A4 at 150dpi)
