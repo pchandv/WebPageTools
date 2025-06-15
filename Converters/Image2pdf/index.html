@@ -162,6 +162,7 @@ generateBtn.addEventListener('click', async function() {
         console.error(err);
         const msg = err && err.message ? err.message : String(err);
         showMessage('Error generating PDF: ' + msg, 'error', false);
+
     }
     generateBtn.disabled = false;
 });
